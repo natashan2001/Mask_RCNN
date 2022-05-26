@@ -15,10 +15,15 @@ import colorsys
 
 import numpy as np
 from skimage.measure import find_contours
-import matplotlib.pyplot as plt
+import matplotlib
+matplotlib.use("Qt5Agg")
+
+from matplotlib import pyplot as plt
 from matplotlib import patches,  lines
 from matplotlib.patches import Polygon
 import IPython.display
+import cv2
+import pandas as pd
 
 # Root directory of the project
 ROOT_DIR = os.path.abspath("../")
@@ -72,12 +77,34 @@ def random_colors(N, bright=True):
 def apply_mask(image, mask, color, alpha=0.5):
     """Apply the given mask to the image.
     """
-    for c in range(3):
+    for c in range(1): #change later
         image[:, :, c] = np.where(mask == 1,
                                   image[:, :, c] *
                                   (1 - alpha) + alpha * color[c] * 255,
                                   image[:, :, c])
     return image
+    """  plt.figure()
+    plt.imshow(mask)
+    plt.show()
+    plt.savefig("C:\\Users\\natas\\OneDrive\\Desktop\\Parekh\\Senior Project\\saved.jpeg")
+    plt.close()
+    im = cv2.imread("C:\\Users\\natas\\OneDrive\\Desktop\\Parekh\\Senior Project\\saved.jpeg")
+    imgray = cv2.cvtColor(im,cv2.COLOR_BGR2GRAY)
+    ret,thresh = cv2.threshold(imgray,127,255,0)
+    contours, hierachy = cv2.findContours(thresh, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
+    #print(contours.shape)
+    
+    cv2.drawContours(imgray, contours, -1, (0,255,0), 3)
+    plt.imshow(imgray)
+    #cv2.imwrite('C:\\Users\\natas\\OneDrive\\Desktop\\Parekh\\Senior Project\\contours'+str(c)+'.jpeg',imgray)
+    area=[]
+    # area.append([c,cv2.contourArea(mask)])
+    for contour in contours:
+        area.append([contour,cv2.contourArea(contour)])
+    area=pd.Series(area)
+    area.to_csv('C:\\Users\\natas\\OneDrive\\Desktop\\Parekh\\Senior Project\\areas'+str(c)+'.csv') """
+
+        
 
 
 def display_instances(image, boxes, masks, class_ids, class_names,

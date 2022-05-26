@@ -135,9 +135,12 @@ class Config(object):
     # Changing this requires other changes in the code. See the WIKI for more
     # details: https://github.com/matterport/Mask_RCNN/wiki
     IMAGE_CHANNEL_COUNT = 3
+    IMAGE_CHANNEL_COUNT_B=1
 
     # Image mean (RGB)
     MEAN_PIXEL = np.array([123.7, 116.8, 103.9])
+    # Image mean (BG)
+    MEAN_PIXEL_BG = [123.7]
 
     # Number of ROIs per image to feed to classifier/mask heads
     # The Mask RCNN paper uses 512 but often the RPN doesn't generate

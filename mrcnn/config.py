@@ -8,6 +8,7 @@ Written by Waleed Abdulla
 """
 
 import numpy as np
+import tensorflow.compat.v1 as tf
 
 
 # Base Configuration Class
@@ -70,7 +71,7 @@ class Config(object):
     TOP_DOWN_PYRAMID_SIZE = 256
 
     # Number of classification classes (including background)
-    NUM_CLASSES = 1  # Override in sub-classes
+    NUM_CLASSES = 2  # Override in sub-classes
 
     # Length of square anchor side in pixels
     RPN_ANCHOR_SCALES = (32, 64, 128, 256, 512)
@@ -165,7 +166,7 @@ class Config(object):
 
     # Bounding box refinement standard deviation for RPN and final detections.
     RPN_BBOX_STD_DEV = np.array([0.1, 0.1, 0.2, 0.2])
-    BBOX_STD_DEV = np.array([0.1, 0.1, 0.2, 0.2])
+    BBOX_STD_DEV = np.array([0.1, 0.1, 0.2, 0.2, 0.1, 0.1, 0.2, 0.2])
 
     # Max number of final detections
     DETECTION_MAX_INSTANCES = 100

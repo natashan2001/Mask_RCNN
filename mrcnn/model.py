@@ -25,6 +25,7 @@ import keras.layers as KL
 import keras.engine as KE
 import keras.models as KM
 import matplotlib.pyplot as plt
+import sys
 
 
 
@@ -246,6 +247,7 @@ def apply_box_deltas_graph(boxes, deltas):
     y2 = y1 + height
     x2 = x1 + width
     result = tf.stack([y1, x1, y2, x2], axis=1, name="apply_box_deltas_out")
+
     return result
 
 
@@ -720,10 +722,19 @@ def refine_detections_graph(rois, probs, deltas, window, config):
     class_scores = tf.gather_nd(probs, indices)
     # Class-specific bounding box deltas
     deltas_specific = tf.gather_nd(deltas, indices)
+
     # Apply bounding box deltas
     # Shape: [boxes, (y1, x1, y2, x2)] in normalized coordinates
+
+    tf_BBOX_STD_DEV= tf.convert_to_tensor(config.BBOX_STD_DEV, dtype=np.float32)
+    
+   # print(type(tf.math.multiply(deltas_specific * config.BBOX_STD_DEV)))
+   
+
     refined_rois = apply_box_deltas_graph(
-        rois, deltas_specific * config.BBOX_STD_DEV)
+        rois, tf.math.multiply(deltas_specific , tf_BBOX_STD_DEV))
+
+    print(type(refined_rois))
     # Clip boxes to image window
     refined_rois = clip_boxes_graph(refined_rois, window)
 
@@ -965,7 +976,7 @@ def fpn_classifier_graph(rois, feature_maps, image_meta,
                            name='mrcnn_bbox_fc')(shared)
     # Reshape to [batch, num_rois, NUM_CLASSES, (dy, dx, log(dh), log(dw))]
     s = K.int_shape(x)
-    mrcnn_bbox = KL.Reshape((-1, num_classes, 4), name="mrcnn_bbox")(x)
+    mrcnn_bbox = KL.Reshape((-1, num_classes, 8), name="mrcnn_bbox")(x) ####CHANGED THIS LINE
 
     return mrcnn_class_logits, mrcnn_probs, mrcnn_bbox
 

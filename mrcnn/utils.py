@@ -922,6 +922,7 @@ def batch_slice(inputs, graph_fn, batch_size, names=None):
         inputs = [inputs]
 
     outputs = []
+    print("w")
     for i in range(batch_size):
         inputs_slice = [x[i] for x in inputs]
         output_slice = graph_fn(*inputs_slice)
@@ -932,6 +933,7 @@ def batch_slice(inputs, graph_fn, batch_size, names=None):
     # a list of outputs to a list of outputs and each has
     # a list of slices
     outputs = list(zip(*outputs))
+    print("k")
 
     if names is None:
         names = [None] * len(outputs)

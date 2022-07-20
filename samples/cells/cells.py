@@ -23,6 +23,7 @@ ROOT_DIR = os.path.abspath("../../")
 
 # Import Mask RCNN
 sys.path.append(ROOT_DIR)  # To find local version of the library
+
 from mrcnn.config import Config
 from mrcnn import model as modellib, utils
 
@@ -46,16 +47,20 @@ class CellConfig(Config):
 
     # We use a GPU with 12GB memory, which can fit two images.
     # Adjust down if you use a smaller GPU.
-    IMAGES_PER_GPU = 2
+    IMAGES_PER_GPU = 1
 
     # Number of classes (including background)
     NUM_CLASSES = 1 + 1  # Background + Cell
 
     # Number of training steps per epoch
-    STEPS_PER_EPOCH = 30
+    STEPS_PER_EPOCH = 2
 
     # Skip detections with < 90% confidence
     DETECTION_MIN_CONFIDENCE = 0.9
+
+    VALIDATION_STEPS = 2
+
+    BATCH_SIZE = 107
 
 
 ############################################################
@@ -72,11 +77,9 @@ class CellDataset(utils.Dataset):
         #assert subset in ["train", "val"]
         dataset_dir = os.path.join(dataset_dir, subset)
         annotations= json.load(open(os.path.join(dataset_dir, "instances_default.json")))
-        print(annotations['images'][2]['file_name'])
         image_name_arr=[]
         for x in annotations['images']:
             image_name_arr.append(x['file_name'])
-        print(len(image_name_arr))
         annotations= pd.DataFrame(annotations.values())
         for col in annotations:
             for x in annotations[col]:
@@ -86,32 +89,33 @@ class CellDataset(utils.Dataset):
      #   annotations = [a for a in annotations if a['segmentations']]
 
         # Add images
-        print(len(arr))
 
         for a in arr:
             # Get the x, y coordinaets of points of the polygons that make up
             # the outline of each object instance. These are stores in the
             # shape_attributes (see json format above)
             # The if condition is needed to support VIA versions 1.x and 2.x.
+            bad_images= ['P23_V5_0214_Scan4_cell02.tif','P23_V5_0214_Scan4_cell110.tif', 'P23_V5_0214_Scan4_cell99.tif']
             try: #fix this later 
-         
-                polygons = a['segmentation']
+                if image_name_arr[a['image_id']] in bad_images:
+                    next
+                else:
+                    polygons = a['segmentation']
 
-                # load_mask() needs the image size to convert polygons to masks.
-                # Unfortunately, VIA doesn't include it in JSON, so we must read
-                # the image. This is only managable since the dataset is tiny.
+                    # load_mask() needs the image size to convert polygons to masks.
+                    # Unfortunately, VIA doesn't include it in JSON, so we must read
+                    # the image. This is only managable since the dataset is tiny.
+                    name=image_name_arr[a['image_id']]
+                    image_path = os.path.join(os.path.join(dataset_dir, "images"), name)
+                    image = skimage.io.imread(image_path)
+                    width, height = image.shape[:2]
 
-                name=image_name_arr[a['image_id']]
-                image_path = os.path.join(os.path.join(dataset_dir, "images"), name)
-                image = skimage.io.imread(image_path)
-                width, height = image.shape[:2]
-
-                self.add_image(
-                    "cells",
-                    image_id=name,  # use file name as a unique image id
-                    path=image_path,
-                    width=width, height=height,
-                    polygons=polygons)
+                    self.add_image(
+                        "cells",
+                        image_id=name,  # use file name as a unique image id
+                        path=image_path,
+                        width=width, height=height,
+                        polygons=polygons)
             except:
                 continue
 
@@ -126,25 +130,30 @@ class CellDataset(utils.Dataset):
         # If not a cell dataset image, delegate to parent class.
         image_info = self.image_info[image_id]
         if image_info["source"] != "cells":
-            print("true")
             return super(self.__class__, self).load_mask(image_id)
 
         # Convert polygons to a bitmap mask of shape
         # [height, width, instance_count]
         info = self.image_info[image_id]
 
-        mask = np.zeros([info["width"], info["height"], len(info["polygons"][0])+1],
-                        dtype=np.uint8)
-
-        x=[]
-        y=[]
-        for i in range(0,len(info["polygons"][0])):
-            if i%2==0:
-                x.append(info["polygons"][0][i])
+        try:
+            if len(info['polygons'][0])==0:
+                return
             else:
-                y.append(info["polygons"][0][i])
-        rr, cc = skimage.draw.polygon(x, y)
-        mask[cc, rr, 0] = 1
+                mask = np.zeros([info["width"], info["height"], len(info["polygons"][0])+1],
+                                dtype=np.uint8)
+
+                x=[]
+                y=[]
+                for i in range(0,len(info["polygons"][0])):
+                    if i%2==0:
+                        x.append(info["polygons"][0][i])
+                    else:
+                        y.append(info["polygons"][0][i])
+                rr, cc = skimage.draw.polygon(x, y)
+                mask[cc, rr, 0] = 1
+        except:
+            print(info)
 
         # Return mask, and array of class IDs of each instance. Since we have
         # one class ID only, we return an array of 1s
